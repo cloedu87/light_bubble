@@ -111,168 +111,6 @@ Vl.new(width: 600, height: 400)
     axis: [title: "Time Dilation Factor (γ)"]
   )
 |> Vl.config(view: [stroke: nil])
-|> Vl.title("Special Relativistic Time Dilation")
-```
-
-### Interactive Example
-
-Let's create an interactive example where you can input a velocity and see the resulting time dilation:
-
-```elixir
-velocity_input = Kino.Input.number("Velocity (% of speed of light)", default: 50)
-observer_time_input = Kino.Input.number("Observer Time (seconds)", default: 10)
-```
-
-```elixir
-velocity_percent = Kino.Input.read(velocity_input)
-observer_time = Kino.Input.read(observer_time_input)
-
-velocity = (velocity_percent / 100) * Constants.speed_of_light()
-proper_time = TimeDilation.calculate_special_relativistic_time(velocity, observer_time)
-time_dilation_factor = observer_time / proper_time
-
-%{
-  "Velocity" => "#{velocity_percent}% of c (#{Float.round(velocity, 2)} m/s)",
-  "Observer Time" => "#{observer_time} seconds",
-  "Proper Time" => "#{Float.round(proper_time, 6)} seconds",
-  "Time Dilation Factor" => Float.round(time_dilation_factor, 6)
-}
-```
-
-## Gravitational Time Dilation
-
-### Theory
-
-General relativity, developed by Einstein in 1915, describes how gravity affects spacetime. One prediction is gravitational time dilation: clocks in stronger gravitational fields run slower than those in weaker fields.
-
-The formula for gravitational time dilation in a weak field is:
-
-$$\Delta t' = \Delta t \times \sqrt{1 - \frac{2GM}{rc^2}}$$
-
-where:
-
-* $\Delta t$ is the time measured by an observer far from the gravitational source
-* $\Delta t'$ is the proper time measured by an observer in the gravitational field
-* $G$ is the gravitational constant
-* $M$ is the mass of the gravitating body
-* $r$ is the distance from the center of the gravitating body
-* $c$ is the speed of light
-
-### Calculating Gravitational Time Dilation
-
-Let's calculate gravitational time dilation for different masses and distances:
-
-```elixir
-# Define a function to calculate gravitational time dilation
-calculate_gravitational_time_dilation = fn mass, distances, observer_time ->
-  Enum.map(distances, fn r ->
-    proper_time = TimeDilation.calculate_gravitational_time(mass, r, observer_time)
-    %{
-      distance: r,
-      proper_time: proper_time,
-      time_dilation_factor: observer_time / proper_time
-    }
-  end)
-end
-
-# Earth's mass in kg
-earth_mass = 5.972e24
-# Earth's radius in meters
-earth_radius = 6.371e6
-# Observer time in seconds
-observer_time = 10.0
-
-# Calculate for distances from 1.1 to 10 Earth radii
-distances = Enum.map(11..100, fn i -> (i / 10) * earth_radius end)
-earth_results = calculate_gravitational_time_dilation.(earth_mass, distances, observer_time)
-
-# Display results for selected distances
-[1.1, 2, 5, 10]
-|> Enum.map(fn factor -> factor * earth_radius end)
-|> calculate_gravitational_time_dilation.(earth_mass, observer_time)
-|> Enum.map(fn %{distance: r, proper_time: t, time_dilation_factor: f} ->
-  %{
-    "Distance (Earth radii)" => Float.round(r / earth_radius, 2),
-    "Proper Time (s)" => Float.round(t, 12),
-    "Time Dilation Factor" => Float.round(f, 12)
-  }
-end)
-```
-
-### Visualization
-
-Let's visualize how gravitational time dilation changes with distance:
-
-```elixir
-earth_results_with_radii = Enum.map(earth_results, fn result ->
-  Map.put(result, :earth_radii, result.distance / earth_radius)
-end)
-
-Vl.new(width: 600, height: 400)
-|> Vl.data_from_values(earth_results_with_radii)
-|> Vl.mark(:line)
-|> Vl.encode_field(:x, "earth_radii",
-    type: :quantitative,
-    axis: [title: "Distance (Earth radii)"]
-  )
-|> Vl.encode_field(:y, "time_dilation_factor",
-    type: :quantitative,
-    axis: [title: "Time Dilation Factor"]
-  )
-|> Vl.config(view: [stroke: nil])
-|> Vl.title("Gravitational Time Dilation near Earth")
-```
-
-### Interactive Example
-
-Let's create an interactive example for gravitational time dilation:
-
-```elixir
-mass_input = Kino.Input.select("Celestial Body", [
-  {"Earth", 5.972e24},
-  {"Sun", 1.989e30},
-  {"White Dwarf", 1.0e30},
-  {"Neutron Star", 2.0e30},
-  {"Black Hole (10 solar masses)", 1.989e31}
-])
-
-distance_input = Kino.Input.number("Distance (multiples of body radius)", default: 2.0)
-g_observer_time_input = Kino.Input.number("Observer Time (seconds)", default: 10)
-```
-
-```elixir
-mass = Kino.Input.read(mass_input)
-distance_factor = Kino.Input.read(distance_input)
-observer_time = Kino.Input.read(g_observer_time_input)
-
-# Approximate radii for the celestial bodies (in meters)
-radii = %{
-  5.972e24 => 6.371e6,    # Earth
-  1.989e30 => 6.957e8,    # Sun
-  1.0e30 => 7.0e6,        # White Dwarf
-  2.0e30 => 1.2e4,        # Neutron Star
-  1.989e31 => 2.954e4     # Black Hole (10 solar masses) - event horizon
-}
-
-radius = radii[mass]
-distance = distance_factor * radius
-
-proper_time = TimeDilation.calculate_gravitational_time(mass, distance, observer_time)
-time_dilation_factor = observer_time / proper_time
-
-# Calculate Schwarzschild radius
-g = Constants.gravitational_constant()
-c = Constants.speed_of_light()
-schwarzschild_radius = 2 * g * mass / (c * c)
-
-%{
-  "Mass" => "#{Float.round(mass / 5.972e24, 2)} Earth masses",
-  "Schwarzschild Radius" => "#{Float.round(schwarzschild_radius, 2)} meters",
-  "Distance" => "#{Float.round(distance_factor, 2)} × radius (#{Float.round(distance, 2)} meters)",
-  "Observer Time" => "#{observer_time} seconds",
-  "Proper Time" => "#{Float.round(proper_time, 12)} seconds",
-  "Time Dilation Factor" => Float.round(time_dilation_factor, 12)
-}
 ```
 
 ## Combined Relativistic Effects
@@ -342,60 +180,6 @@ Vl.new(width: 600, height: 400)
     axis: [title: "Time Dilation Factor"]
   )
 |> Vl.config(view: [stroke: nil])
-|> Vl.title("Combined Time Dilation (Earth's gravity + velocity)")
-```
-
-### Interactive Example
-
-Let's create an interactive example for combined time dilation:
-
-```elixir
-combined_velocity_input = Kino.Input.number("Velocity (% of speed of light)", default: 50)
-combined_mass_input = Kino.Input.select("Celestial Body", [
-  {"Earth", 5.972e24},
-  {"Sun", 1.989e30},
-  {"White Dwarf", 1.0e30},
-  {"Neutron Star", 2.0e30}
-])
-combined_distance_input = Kino.Input.number("Distance (multiples of body radius)", default: 2.0)
-combined_observer_time_input = Kino.Input.number("Observer Time (seconds)", default: 10)
-```
-
-```elixir
-velocity_percent = Kino.Input.read(combined_velocity_input)
-mass = Kino.Input.read(combined_mass_input)
-distance_factor = Kino.Input.read(combined_distance_input)
-observer_time = Kino.Input.read(combined_observer_time_input)
-
-# Approximate radii for the celestial bodies (in meters)
-radii = %{
-  5.972e24 => 6.371e6,    # Earth
-  1.989e30 => 6.957e8,    # Sun
-  1.0e30 => 7.0e6,        # White Dwarf
-  2.0e30 => 1.2e4         # Neutron Star
-}
-
-radius = radii[mass]
-distance = distance_factor * radius
-velocity = (velocity_percent / 100) * Constants.speed_of_light()
-
-proper_time = TimeDilation.calculate_proper_time(velocity, mass, distance, observer_time)
-time_dilation_factor = observer_time / proper_time
-
-# Calculate individual effects for comparison
-special_relativistic_time = TimeDilation.calculate_special_relativistic_time(velocity, observer_time)
-gravitational_time = TimeDilation.calculate_gravitational_time(mass, distance, observer_time)
-
-%{
-  "Velocity" => "#{velocity_percent}% of c",
-  "Mass" => "#{Float.round(mass / 5.972e24, 2)} Earth masses",
-  "Distance" => "#{Float.round(distance_factor, 2)} × radius",
-  "Observer Time" => "#{observer_time} seconds",
-  "Special Relativistic Time" => "#{Float.round(special_relativistic_time, 6)} seconds",
-  "Gravitational Time" => "#{Float.round(gravitational_time, 6)} seconds",
-  "Combined Proper Time" => "#{Float.round(proper_time, 6)} seconds",
-  "Combined Time Dilation Factor" => Float.round(time_dilation_factor, 6)
-}
 ```
 
 ## Advanced Spacetime Metrics
@@ -506,8 +290,8 @@ The Global Positioning System (GPS) must account for both special and general re
 
 ```elixir
 # GPS satellite parameters
-gps_altitude = 20200e3  # 20,200 km above Earth's surface
-gps_radius = gps_altitude + 6371e3  # Distance from Earth's center
+gps_altitude = 2.0200e3  # 20,200 km above Earth's surface
+gps_radius = gps_altitude + 6.371e3  # Distance from Earth's center
 gps_velocity = 3874.0  # Orbital velocity in m/s
 earth_mass = 5.972e24  # Earth's mass in kg
 observer_time = 24 * 3600  # 1 day in seconds
@@ -551,11 +335,3 @@ traveler_time = TimeDilation.calculate_special_relativistic_time(spacecraft_velo
   "Time Saved by Traveler" => "#{Float.round((earth_time - traveler_time) / (365.25 * 24 * 3600), 2)} years"
 }
 ```
-
-## Conclusion
-
-In this notebook, we've explored the fascinating effects of special and general relativity using the LightBubble library. We've seen how time dilation occurs due to velocity and gravity, and how these effects can be combined in real-world scenarios.
-
-The LightBubble library provides a powerful set of tools for calculating relativistic effects, from simple time dilation to complex spacetime metrics. By understanding these concepts, we can better appreciate the nature of space, time, and gravity in our universe.
-
-For more information, refer to the [LightBubble documentation](https://github.com/cloedu87/light_bubble) and explore the source code to see how these calculations are implemented.

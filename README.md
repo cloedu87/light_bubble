@@ -30,16 +30,6 @@ end
 
 For an interactive exploration of the LightBubble library, you can use the included Livebook:
 
-```bash
-# Install Livebook if you don't have it already
-mix escript.install hex livebook
-
-# Run the Livebook server
-livebook server
-
-# Then open the relativity_explorer.livemd file from the notebooks directory
-```
-
 > **Note**: The Livebook uses a git dependency to import the LightBubble modules directly from the GitHub repository, so you don't need to compile the application locally.
 
 The Livebook provides:
