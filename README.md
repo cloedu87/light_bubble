@@ -84,6 +84,9 @@ Provides functions to define and manipulate spacetime metrics:
 
 - `minkowski_metric/0`: Creates a Minkowski metric tensor for flat spacetime
 - `schwarzschild_metric/4`: Creates a Schwarzschild metric tensor for curved spacetime around a massive object
+- `kerr_metric/4`: Creates a Kerr metric tensor for spacetime around a rotating black hole
+- `morris_thorne_metric/3`: Creates a Morris-Thorne metric tensor for a traversable wormhole
+- `flrw_metric/4`: Creates a Friedmann-Lemaître-Robertson-Walker metric tensor for an expanding universe
 - `proper_time_interval/2`: Calculates the proper time interval using a metric tensor and coordinate differentials
 - `calculate_proper_time/4`: Calculates the proper time for an object moving in a gravitational field
 

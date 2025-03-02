@@ -128,6 +128,147 @@ defmodule LightBubble.Relativity.Spacetime do
   end
 
   @doc """
+  Creates a Kerr metric tensor for spacetime around a rotating black hole.
+
+  The Kerr metric describes the geometry of spacetime around a rotating,
+  uncharged, axially-symmetric black hole.
+
+  ## Parameters
+
+    * `mass` - Mass of the black hole in kilograms
+    * `angular_momentum` - Angular momentum of the black hole in kg·m²/s
+    * `r` - Radial distance from the center in meters
+    * `theta` - Polar angle in radians
+
+  ## Examples
+
+      iex> mass = 1.0e30  # 1 solar mass in kg
+      iex> angular_momentum = 1.0e40  # Angular momentum in kg·m²/s
+      iex> r = 3.0e3  # 3000 meters from center
+      iex> theta = :math.pi() / 2
+      iex> metric = LightBubble.Relativity.Spacetime.kerr_metric(mass, angular_momentum, r, theta)
+      iex> Nx.shape(metric)
+      {4, 4}
+
+  """
+  def kerr_metric(mass, angular_momentum, r, theta) do
+    # Constants
+    c = Constants.speed_of_light()
+    g = Constants.gravitational_constant()
+    # Schwarzschild radius
+    rs = 2 * g * mass / (c * c)
+    # Normalized angular momentum
+    a = angular_momentum / (mass * c)
+
+    # Metric components
+    rho_squared = r * r + a * a * :math.cos(theta) * :math.cos(theta)
+    delta = r * r - rs * r + a * a
+
+    # Calculate metric components
+    g_tt = -(1 - rs * r / rho_squared)
+    g_tphi = -rs * r * a * :math.sin(theta) * :math.sin(theta) / rho_squared
+    g_rr = rho_squared / delta
+    g_theta_theta = rho_squared
+
+    g_phi_phi =
+      (r * r + a * a + rs * r * a * a * :math.sin(theta) * :math.sin(theta) / rho_squared) *
+        :math.sin(theta) * :math.sin(theta)
+
+    g_phi_t = g_tphi
+
+    # Create the metric tensor
+    Nx.tensor([
+      [g_tt, 0.0, 0.0, g_tphi],
+      [0.0, g_rr, 0.0, 0.0],
+      [0.0, 0.0, g_theta_theta, 0.0],
+      [g_phi_t, 0.0, 0.0, g_phi_phi]
+    ])
+  end
+
+  @doc """
+  Creates a Morris-Thorne metric tensor for a traversable wormhole.
+
+  The Morris-Thorne metric describes a traversable wormhole connecting two
+  regions of spacetime.
+
+  ## Parameters
+
+    * `throat_radius` - Radius of the wormhole throat in meters
+    * `r` - Radial distance from the center in meters
+    * `theta` - Polar angle in radians
+
+  ## Examples
+
+      iex> throat_radius = 1.0e3  # 1000 meters
+      iex> r = 2.0e3  # 2000 meters from center
+      iex> theta = :math.pi() / 2
+      iex> metric = LightBubble.Relativity.Spacetime.morris_thorne_metric(throat_radius, r, theta)
+      iex> Nx.shape(metric)
+      {4, 4}
+
+  """
+  def morris_thorne_metric(throat_radius, r, theta) do
+    # Calculate metric components
+    b = throat_radius
+    g_tt = -1.0
+    g_rr = 1.0 / (1 - b / r)
+    g_theta_theta = r * r
+    g_phi_phi = r * r * :math.sin(theta) * :math.sin(theta)
+
+    # Create the metric tensor
+    Nx.tensor([
+      [g_tt, 0.0, 0.0, 0.0],
+      [0.0, g_rr, 0.0, 0.0],
+      [0.0, 0.0, g_theta_theta, 0.0],
+      [0.0, 0.0, 0.0, g_phi_phi]
+    ])
+  end
+
+  @doc """
+  Creates a Friedmann-Lemaître-Robertson-Walker (FLRW) metric tensor for an expanding universe.
+
+  The FLRW metric describes a homogeneous, isotropic expanding or contracting universe
+  and is the standard metric in physical cosmology.
+
+  ## Parameters
+
+    * `scale_factor` - Scale factor of the universe (dimensionless)
+    * `curvature` - Spatial curvature parameter (-1, 0, or 1 for open, flat, or closed universe)
+    * `chi` - Comoving radial coordinate (dimensionless)
+    * `theta` - Polar angle in radians
+
+  ## Examples
+
+      iex> scale_factor = 1.0  # Current epoch
+      iex> curvature = 0  # Flat universe
+      iex> chi = 0.5  # Comoving distance
+      iex> theta = :math.pi() / 2
+      iex> metric = LightBubble.Relativity.Spacetime.flrw_metric(scale_factor, curvature, chi, theta)
+      iex> Nx.shape(metric)
+      {4, 4}
+
+  """
+  def flrw_metric(scale_factor, curvature, chi, theta) do
+    # Calculate metric components
+    a = scale_factor
+    # -1, 0, or 1 for open, flat, or closed universe
+    k = curvature
+
+    g_tt = -1.0
+    g_rr = a * a / (1 - k * chi * chi)
+    g_theta_theta = a * a * chi * chi
+    g_phi_phi = a * a * chi * chi * :math.sin(theta) * :math.sin(theta)
+
+    # Create the metric tensor
+    Nx.tensor([
+      [g_tt, 0.0, 0.0, 0.0],
+      [0.0, g_rr, 0.0, 0.0],
+      [0.0, 0.0, g_theta_theta, 0.0],
+      [0.0, 0.0, 0.0, g_phi_phi]
+    ])
+  end
+
+  @doc """
   Calculates the proper time for an object moving in a gravitational field.
 
   ## Parameters

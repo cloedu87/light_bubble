@@ -155,4 +155,173 @@ defmodule LightBubble.Relativity.SpacetimeTest do
       assert_in_delta proper_time, expected, 1.0e-10
     end
   end
+
+  describe "kerr_metric/4" do
+    test "returns a 4x4 tensor with correct structure" do
+      # Black hole mass (solar mass in kg)
+      mass = 1.989e30
+      # Angular momentum
+      angular_momentum = 1.0e40
+      r = 3.0e3
+      theta = :math.pi() / 2
+
+      metric = Spacetime.kerr_metric(mass, angular_momentum, r, theta)
+      assert Nx.shape(metric) == {4, 4}
+
+      # Check that specific off-diagonal elements are non-zero (t-phi and phi-t)
+      assert Nx.to_number(metric[0][3]) != 0.0
+      assert Nx.to_number(metric[3][0]) != 0.0
+
+      # Check that other off-diagonal elements are zero
+      assert Nx.to_number(metric[0][1]) == 0.0
+      assert Nx.to_number(metric[0][2]) == 0.0
+      assert Nx.to_number(metric[1][2]) == 0.0
+      assert Nx.to_number(metric[1][3]) == 0.0
+      assert Nx.to_number(metric[2][3]) == 0.0
+    end
+
+    test "calculates correct metric components for a rotating black hole" do
+      # Black hole mass (solar mass in kg)
+      mass = 1.989e30
+      # Angular momentum
+      angular_momentum = 1.0e40
+      r = 3.0e3
+      theta = :math.pi() / 2
+
+      c = Constants.speed_of_light()
+      g = Constants.gravitational_constant()
+      rs = 2 * g * mass / (c * c)
+      a = angular_momentum / (mass * c)
+
+      rho_squared = r * r + a * a * :math.cos(theta) * :math.cos(theta)
+      delta = r * r - rs * r + a * a
+
+      expected_g_tt = -(1 - rs * r / rho_squared)
+      expected_g_tphi = -rs * r * a * :math.sin(theta) * :math.sin(theta) / rho_squared
+      expected_g_rr = rho_squared / delta
+      expected_g_theta_theta = rho_squared
+
+      expected_g_phi_phi =
+        (r * r + a * a + rs * r * a * a * :math.sin(theta) * :math.sin(theta) / rho_squared) *
+          :math.sin(theta) * :math.sin(theta)
+
+      expected_g_phi_t = expected_g_tphi
+
+      metric = Spacetime.kerr_metric(mass, angular_momentum, r, theta)
+
+      # For small values, use absolute tolerance with appropriate delta
+      assert_in_delta Nx.to_number(metric[0][0]), expected_g_tt, 1.0e-8
+      assert_in_delta Nx.to_number(metric[0][3]), expected_g_tphi, 1.0e-6
+      assert_in_delta Nx.to_number(metric[1][1]), expected_g_rr, 1.0e-5
+      assert_in_delta Nx.to_number(metric[3][0]), expected_g_phi_t, 1.0e-6
+
+      # For large values, use relative tolerance
+      assert_in_delta Nx.to_number(metric[2][2]) / expected_g_theta_theta, 1.0, 1.0e-7
+      assert_in_delta Nx.to_number(metric[3][3]) / expected_g_phi_phi, 1.0, 1.0e-7
+    end
+  end
+
+  describe "morris_thorne_metric/3" do
+    test "returns a 4x4 tensor with correct structure" do
+      throat_radius = 1.0e3
+      r = 2.0e3
+      theta = :math.pi() / 2
+
+      metric = Spacetime.morris_thorne_metric(throat_radius, r, theta)
+      assert Nx.shape(metric) == {4, 4}
+
+      # Check that off-diagonal elements are zero
+      assert Nx.to_number(metric[0][1]) == 0.0
+      assert Nx.to_number(metric[0][2]) == 0.0
+      assert Nx.to_number(metric[0][3]) == 0.0
+      assert Nx.to_number(metric[1][2]) == 0.0
+      assert Nx.to_number(metric[1][3]) == 0.0
+      assert Nx.to_number(metric[2][3]) == 0.0
+    end
+
+    test "calculates correct metric components for a wormhole" do
+      throat_radius = 1.0e3
+      r = 2.0e3
+      theta = :math.pi() / 2
+
+      expected_g_tt = -1.0
+      expected_g_rr = 1.0 / (1 - throat_radius / r)
+      expected_g_theta_theta = r * r
+      expected_g_phi_phi = r * r * :math.sin(theta) * :math.sin(theta)
+
+      metric = Spacetime.morris_thorne_metric(throat_radius, r, theta)
+
+      # For small values, use absolute tolerance
+      assert_in_delta Nx.to_number(metric[0][0]), expected_g_tt, 1.0e-8
+      assert_in_delta Nx.to_number(metric[1][1]), expected_g_rr, 1.0e-8
+
+      # For large values, use relative tolerance
+      assert_in_delta Nx.to_number(metric[2][2]) / expected_g_theta_theta, 1.0, 1.0e-7
+      assert_in_delta Nx.to_number(metric[3][3]) / expected_g_phi_phi, 1.0, 1.0e-7
+    end
+  end
+
+  describe "flrw_metric/4" do
+    test "returns a 4x4 tensor with correct structure" do
+      scale_factor = 1.0
+      curvature = 0
+      chi = 0.5
+      theta = :math.pi() / 2
+
+      metric = Spacetime.flrw_metric(scale_factor, curvature, chi, theta)
+      assert Nx.shape(metric) == {4, 4}
+
+      # Check that off-diagonal elements are zero
+      assert Nx.to_number(metric[0][1]) == 0.0
+      assert Nx.to_number(metric[0][2]) == 0.0
+      assert Nx.to_number(metric[0][3]) == 0.0
+      assert Nx.to_number(metric[1][2]) == 0.0
+      assert Nx.to_number(metric[1][3]) == 0.0
+      assert Nx.to_number(metric[2][3]) == 0.0
+    end
+
+    test "calculates correct metric components for a flat universe" do
+      scale_factor = 1.0
+      curvature = 0
+      chi = 0.5
+      theta = :math.pi() / 2
+
+      expected_g_tt = -1.0
+      expected_g_rr = scale_factor * scale_factor
+      expected_g_theta_theta = scale_factor * scale_factor * chi * chi
+
+      expected_g_phi_phi =
+        scale_factor * scale_factor * chi * chi * :math.sin(theta) * :math.sin(theta)
+
+      metric = Spacetime.flrw_metric(scale_factor, curvature, chi, theta)
+
+      # For small values, use absolute tolerance with appropriate delta
+      assert_in_delta Nx.to_number(metric[0][0]), expected_g_tt, 1.0e-8
+      assert_in_delta Nx.to_number(metric[1][1]), expected_g_rr, 1.0e-6
+      assert_in_delta Nx.to_number(metric[2][2]), expected_g_theta_theta, 1.0e-7
+      assert_in_delta Nx.to_number(metric[3][3]), expected_g_phi_phi, 1.0e-7
+    end
+
+    test "calculates correct metric components for a closed universe" do
+      scale_factor = 2.0
+      curvature = 1
+      chi = 0.3
+      theta = :math.pi() / 2
+
+      expected_g_tt = -1.0
+      expected_g_rr = scale_factor * scale_factor / (1 - curvature * chi * chi)
+      expected_g_theta_theta = scale_factor * scale_factor * chi * chi
+
+      expected_g_phi_phi =
+        scale_factor * scale_factor * chi * chi * :math.sin(theta) * :math.sin(theta)
+
+      metric = Spacetime.flrw_metric(scale_factor, curvature, chi, theta)
+
+      # For small values, use absolute tolerance with appropriate delta
+      assert_in_delta Nx.to_number(metric[0][0]), expected_g_tt, 1.0e-8
+      assert_in_delta Nx.to_number(metric[1][1]), expected_g_rr, 1.0e-6
+      assert_in_delta Nx.to_number(metric[2][2]), expected_g_theta_theta, 1.0e-7
+      assert_in_delta Nx.to_number(metric[3][3]), expected_g_phi_phi, 1.0e-7
+    end
+  end
 end

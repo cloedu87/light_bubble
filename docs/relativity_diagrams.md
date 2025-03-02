@@ -16,6 +16,9 @@ classDiagram
     class Spacetime {
         +minkowski_metric()
         +schwarzschild_metric(mass, r, theta, phi)
+        +kerr_metric(mass, angular_momentum, r, theta)
+        +morris_thorne_metric(throat_radius, r, theta)
+        +flrw_metric(scale_factor, curvature, chi, theta)
         +proper_time_interval(metric, dx)
         +calculate_proper_time(velocity, mass, r, coordinate_time)
     }
