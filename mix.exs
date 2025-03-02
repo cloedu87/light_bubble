@@ -33,6 +33,8 @@ defmodule LightBubble.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:nx, "~> 0.6.0"},
+      {:math, "~> 0.7.0"},
       {:bcrypt_elixir, "~> 3.0"},
       {:picosat_elixir, "~> 0.2"},
       {:ash_admin, "~> 0.13"},
