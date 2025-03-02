@@ -1,0 +1,337 @@
+# LightBubble Relativity Explorer
+
+## Introduction
+
+Welcome to the LightBubble Relativity Explorer! This interactive notebook allows you to explore the fascinating effects of special and general relativity using the LightBubble library.
+
+In this notebook, you'll learn about:
+
+* Special relativistic time dilation (due to velocity)
+* Gravitational time dilation (due to gravity)
+* Combined relativistic effects in curved spacetime
+* Advanced spacetime metrics and their properties
+
+The calculations are based on the equations of special and general relativity, including tensor mathematics for curved spacetime calculations.
+
+## Setup
+
+First, let's set up our environment by importing the necessary modules and libraries.
+
+```elixir
+# Install required dependencies including the LightBubble project from git
+Mix.install([
+  {:nx, "~> 0.6.0"},
+  {:vega_lite, "~> 0.1.6"},
+  {:kino_vega_lite, "~> 0.1.7"},
+  # Replace the URL below with your actual git repository URL
+  {:light_bubble, git: "https://github.com/cloedu87/light_bubble.git"}
+])
+
+# Import the LightBubble modules
+alias LightBubble.Relativity.Constants
+alias LightBubble.Relativity.TimeDilation
+alias LightBubble.Relativity.Spacetime
+
+alias VegaLite, as: Vl
+```
+
+## Special Relativity
+
+### Theory
+
+Special relativity, developed by Albert Einstein in 1905, revolutionized our understanding of space and time. One of its most profound implications is time dilation: moving clocks run slower than stationary ones.
+
+The formula for special relativistic time dilation is:
+
+$$\Delta t' = \frac{\Delta t}{\gamma}$$
+
+where:
+
+* $\Delta t$ is the time measured by a stationary observer
+* $\Delta t'$ is the proper time measured by the moving observer
+* $\gamma$ (gamma) is the Lorentz factor: $\gamma = \frac{1}{\sqrt{1 - v^2/c^2}}$
+* $v$ is the relative velocity
+* $c$ is the speed of light
+
+### Calculating Time Dilation
+
+Let's use the LightBubble library to calculate time dilation for different velocities:
+
+```elixir
+# Define a function to calculate time dilation for a range of velocities
+
+calculate_time_dilation_for_velocities = fn velocities, observer_time ->
+  Enum.map(velocities, fn velocity_fraction ->
+    velocity = velocity_fraction * Constants.speed_of_light()
+    proper_time = TimeDilation.calculate_special_relativistic_time(velocity, observer_time)
+    %{
+      velocity_fraction: velocity_fraction,
+      proper_time: proper_time,
+      time_dilation_factor: observer_time / proper_time
+    }
+  end)
+end
+
+# Define the observer time (in seconds)
+observer_time = 10.0
+
+# Calculate for velocities from 0% to 99% of the speed of light
+velocities = Enum.map(0..99, fn i -> i / 100 end)
+results = calculate_time_dilation_for_velocities.(velocities, observer_time)
+
+# Display the results for selected velocities
+[0, 10, 50, 90, 95, 99]
+|> Enum.map(fn percent ->
+  percent / 100
+end)
+|> calculate_time_dilation_for_velocities.(observer_time)
+|> Enum.map(fn %{velocity_fraction: v, proper_time: t, time_dilation_factor: f} ->
+  %{
+    "Velocity (% of c)" => "#{v * 100}%",
+    "Proper Time (s)" => Float.round(t, 6),
+    "Time Dilation Factor" => Float.round(f, 6)
+  }
+end)
+```
+
+### Visualization
+
+Let's visualize how time dilation changes with velocity:
+
+```elixir
+Vl.new(width: 600, height: 400)
+|> Vl.data_from_values(results)
+|> Vl.mark(:line)
+|> Vl.encode_field(:x, "velocity_fraction",
+    type: :quantitative,
+    axis: [title: "Velocity (fraction of c)"]
+  )
+|> Vl.encode_field(:y, "time_dilation_factor",
+    type: :quantitative,
+    axis: [title: "Time Dilation Factor (γ)"]
+  )
+|> Vl.config(view: [stroke: nil])
+```
+
+## Combined Relativistic Effects
+
+### Theory
+
+In real-world scenarios, both velocity and gravity can cause time dilation simultaneously. The LightBubble library can calculate the combined effect using the `calculate_proper_time/4` function.
+
+### Calculating Combined Time Dilation
+
+Let's calculate the combined time dilation for an object moving at different velocities in Earth's gravitational field:
+
+```elixir
+# Define a function to calculate combined time dilation
+calculate_combined_time_dilation = fn velocities, mass, r, observer_time ->
+  Enum.map(velocities, fn velocity_fraction ->
+    velocity = velocity_fraction * Constants.speed_of_light()
+    proper_time = TimeDilation.calculate_proper_time(velocity, mass, r, observer_time)
+    %{
+      velocity_fraction: velocity_fraction,
+      proper_time: proper_time,
+      time_dilation_factor: observer_time / proper_time
+    }
+  end)
+end
+
+# Earth's mass in kg
+earth_mass = 5.972e24
+# Earth's radius in meters
+earth_radius = 6.371e6
+# Observer time in seconds
+observer_time = 10.0
+
+# Calculate for velocities from 0% to 99% of the speed of light
+velocities = Enum.map(0..99, fn i -> i / 100 end)
+combined_results = calculate_combined_time_dilation.(velocities, earth_mass, earth_radius, observer_time)
+
+# Display results for selected velocities
+[0, 10, 50, 90, 95, 99]
+|> Enum.map(fn percent ->
+  percent / 100
+end)
+|> calculate_combined_time_dilation.(earth_mass, earth_radius, observer_time)
+|> Enum.map(fn %{velocity_fraction: v, proper_time: t, time_dilation_factor: f} ->
+  %{
+    "Velocity (% of c)" => "#{v * 100}%",
+    "Proper Time (s)" => Float.round(t, 6),
+    "Time Dilation Factor" => Float.round(f, 6)
+  }
+end)
+```
+
+### Visualization
+
+Let's visualize how the combined time dilation changes with velocity:
+
+```elixir
+Vl.new(width: 600, height: 400)
+|> Vl.data_from_values(combined_results)
+|> Vl.mark(:line)
+|> Vl.encode_field(:x, "velocity_fraction",
+    type: :quantitative,
+    axis: [title: "Velocity (fraction of c)"]
+  )
+|> Vl.encode_field(:y, "time_dilation_factor",
+    type: :quantitative,
+    axis: [title: "Time Dilation Factor"]
+  )
+|> Vl.config(view: [stroke: nil])
+```
+
+## Advanced Spacetime Metrics
+
+### Theory
+
+In general relativity, spacetime is described by a metric tensor that encodes the geometry of spacetime. The LightBubble library provides several metric tensors for different spacetime geometries:
+
+* Minkowski metric (flat spacetime)
+* Schwarzschild metric (non-rotating massive object)
+* Kerr metric (rotating black hole)
+* Morris-Thorne metric (traversable wormhole)
+* FLRW metric (expanding universe)
+
+### Exploring Different Metrics
+
+Let's explore the different metrics provided by the LightBubble library:
+
+```elixir
+# Minkowski metric (flat spacetime)
+minkowski = Spacetime.minkowski_metric()
+IO.puts("Minkowski metric (flat spacetime):")
+minkowski |> Nx.to_heatmap() |> IO.inspect()
+
+# Schwarzschild metric (Earth at surface)
+earth_mass = 5.972e24
+earth_radius = 6.371e6
+theta = :math.pi() / 2
+phi = 0.0
+schwarzschild = Spacetime.schwarzschild_metric(earth_mass, earth_radius, theta, phi)
+IO.puts("\nSchwarzschild metric (Earth at surface):")
+schwarzschild |> Nx.to_heatmap() |> IO.inspect()
+
+# Kerr metric (rotating black hole)
+black_hole_mass = 1.989e30  # 1 solar mass
+angular_momentum = 1.0e40   # Angular momentum
+r = 3.0e3                   # 3 km from center
+kerr = Spacetime.kerr_metric(black_hole_mass, angular_momentum, r, theta)
+IO.puts("\nKerr metric (rotating black hole):")
+kerr |> Nx.to_heatmap() |> IO.inspect()
+
+# Morris-Thorne metric (wormhole)
+throat_radius = 1.0e3  # 1 km throat
+r_wormhole = 2.0e3     # 2 km from center
+morris_thorne = Spacetime.morris_thorne_metric(throat_radius, r_wormhole, theta)
+IO.puts("\nMorris-Thorne metric (wormhole):")
+morris_thorne |> Nx.to_heatmap() |> IO.inspect()
+
+# FLRW metric (expanding universe)
+scale_factor = 1.0  # Current epoch
+curvature = 0       # Flat universe
+chi = 0.5           # Comoving distance
+flrw = Spacetime.flrw_metric(scale_factor, curvature, chi, theta)
+IO.puts("\nFLRW metric (expanding universe):")
+flrw |> Nx.to_heatmap() |> IO.inspect()
+```
+
+### Calculating Proper Time with Custom Metrics
+
+Let's calculate the proper time using different metrics:
+
+```elixir
+# Define a function to calculate proper time with different metrics
+calculate_proper_time_with_metrics = fn velocity_vector, metrics, observer_time ->
+  Enum.map(metrics, fn {name, metric} ->
+    proper_time = TimeDilation.calculate_proper_time_with_metric(velocity_vector, metric, observer_time)
+    %{
+      metric_name: name,
+      proper_time: proper_time,
+      time_dilation_factor: observer_time / proper_time
+    }
+  end)
+end
+
+# Observer time in seconds
+observer_time = 10.0
+# Velocity vector (10% of c in x direction)
+velocity_vector = [0.1 * Constants.speed_of_light(), 0.0, 0.0]
+
+# Create a list of metrics
+metrics = [
+  {"Minkowski (flat spacetime)", minkowski},
+  {"Schwarzschild (Earth)", schwarzschild},
+  {"Kerr (rotating black hole)", kerr},
+  {"Morris-Thorne (wormhole)", morris_thorne},
+  {"FLRW (expanding universe)", flrw}
+]
+
+# Calculate proper time for each metric
+metric_results = calculate_proper_time_with_metrics.(velocity_vector, metrics, observer_time)
+
+# Display the results
+metric_results
+|> Enum.map(fn %{metric_name: name, proper_time: t, time_dilation_factor: f} ->
+  %{
+    "Metric" => name,
+    "Proper Time (s)" => Float.round(t, 6),
+    "Time Dilation Factor" => Float.round(f, 6)
+  }
+end)
+```
+
+## Real-world Applications
+
+### GPS Time Dilation
+
+The Global Positioning System (GPS) must account for both special and general relativistic time dilation to maintain accuracy. Let's calculate the time dilation effects for a GPS satellite:
+
+```elixir
+# GPS satellite parameters
+gps_altitude = 2.0200e3  # 20,200 km above Earth's surface
+gps_radius = gps_altitude + 6.371e3  # Distance from Earth's center
+gps_velocity = 3874.0  # Orbital velocity in m/s
+earth_mass = 5.972e24  # Earth's mass in kg
+observer_time = 24 * 3600  # 1 day in seconds
+
+# Calculate time dilation effects
+special_relativistic_time = TimeDilation.calculate_special_relativistic_time(gps_velocity, observer_time)
+gravitational_time = TimeDilation.calculate_gravitational_time(earth_mass, gps_radius, observer_time)
+combined_time = TimeDilation.calculate_proper_time(gps_velocity, earth_mass, gps_radius, observer_time)
+
+# Calculate time differences
+special_time_diff = observer_time - special_relativistic_time
+gravitational_time_diff = observer_time - gravitational_time
+combined_time_diff = observer_time - combined_time
+
+%{
+  "Observer Time" => "#{observer_time} seconds (1 day)",
+  "Special Relativistic Effect" => "#{Float.round(special_time_diff * 1000, 3)} milliseconds slower per day",
+  "Gravitational Effect" => "#{Float.round(gravitational_time_diff * 1000, 3)} milliseconds faster per day",
+  "Combined Effect" => "#{Float.round(combined_time_diff * 1000, 3)} milliseconds difference per day"
+}
+```
+
+### Interstellar Travel
+
+Let's calculate the time dilation for a hypothetical interstellar journey:
+
+```elixir
+# Interstellar journey parameters
+distance_to_proxima_centauri = 4.246 * 9.461e15  # 4.246 light-years in meters
+spacecraft_velocity = 0.5 * Constants.speed_of_light()  # 50% of speed of light
+earth_time = distance_to_proxima_centauri / spacecraft_velocity  # Time as measured on Earth
+
+# Calculate time dilation
+traveler_time = TimeDilation.calculate_special_relativistic_time(spacecraft_velocity, earth_time)
+
+%{
+  "Distance to Proxima Centauri" => "4.246 light-years",
+  "Spacecraft Velocity" => "50% of speed of light",
+  "Earth Time" => "#{Float.round(earth_time / (365.25 * 24 * 3600), 2)} years",
+  "Traveler Time" => "#{Float.round(traveler_time / (365.25 * 24 * 3600), 2)} years",
+  "Time Saved by Traveler" => "#{Float.round((earth_time - traveler_time) / (365.25 * 24 * 3600), 2)} years"
+}
+```

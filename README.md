@@ -26,6 +26,19 @@ end
 
 ## Usage
 
+### Livebook
+
+For an interactive exploration of the LightBubble library, you can use the included Livebook:
+
+> **Note**: The Livebook uses a git dependency to import the LightBubble modules directly from the GitHub repository, so you don't need to compile the application locally.
+
+The Livebook provides:
+
+- Interactive examples of all relativity calculations
+- Visualizations of time dilation effects
+- Real-world applications of relativity
+- Advanced spacetime metric explorations
+
 ### Basic Usage
 
 ```elixir
