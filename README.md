@@ -2,6 +2,8 @@
 
 A library for calculating time dilation effects in special and general relativity.
 
+thanks to @ScienceClicEN for the inspiration in the great [video about general relativity](https://www.youtube.com/watch?v=PCujLVSRuMk)
+
 ## Overview
 
 This library provides functions to calculate time dilation in various relativistic scenarios:
