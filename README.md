@@ -14,18 +14,6 @@ This library provides functions to calculate time dilation in various relativist
 
 The calculations are based on the equations of special and general relativity, including the use of tensor mathematics for curved spacetime calculations.
 
-## Installation
-
-The package can be installed by adding `light_bubble` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:light_bubble, "~> 0.1.0"}
-  ]
-end
-```
-
 ## Usage
 
 ### Livebook
